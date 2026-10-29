@@ -6,7 +6,7 @@ the C standard library, and checked-in input fixtures.
 
 Each executable discovers one package with `find_package`, links only that
 package's imported target, includes only its installed public headers, and calls
-one of its public format APIs. The default package list covers all 14 current
+one of its public APIs. The default package list covers all 15 current
 packages. A single package can be selected while validating an individual
 installation prefix:
 
@@ -39,6 +39,7 @@ format surface.
 | Archive | `qw_zip_archive_open` | `archive.zip` |
 | Audio | `qw_audio_reader_open` | `tone.wav` |
 | Comic | `qw_comic_archive_open` | `sample.cbz` |
+| Compression | `qw_compression_inflate_zlib` | RFC 1950 known-answer stream |
 | Data | `qw_data_parse` | inline JSON |
 | Document | `qw_email_parse` | inline EML |
 | Ebook | `qw_epub_parse` | `sample.epub` |
