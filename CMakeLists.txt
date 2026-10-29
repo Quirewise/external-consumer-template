@@ -5,7 +5,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(CTest)
 
 set(_quirewise_supported_packages
-    Archive Audio Charset Comic Compression Data Document Ebook Image Page PDG Runtime
+    Archive Audio Charset Comic Compression Crypto Data Document Ebook Image Page PDG Runtime
     Spreadsheet Subtitle Text Vector)
 set(QUIREWISE_CONSUMER_PACKAGES "${_quirewise_supported_packages}" CACHE STRING
     "Semicolon-separated Quirewise packages to discover and consume")

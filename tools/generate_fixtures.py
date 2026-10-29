@@ -64,6 +64,61 @@ def pdf_one_page() -> bytes:
     return bytes(result)
 
 
+def founder_keystream(key: bytes, size: int) -> bytes:
+    state = list(range(256))
+    j = 0
+    for i in range(256):
+        j = (j + state[i] + (key[i % len(key)] | 0xAA)) & 0xFF
+        state[i], state[j] = state[j], state[i]
+    output = bytearray(size)
+    i = 0
+    for offset in range(size):
+        i = (i + 1) & 0xFF
+        old_si = state[i]
+        j = (j + old_si) & 0xFF
+        state[i] = state[j]
+        state[j] = state[old_si]
+        output[offset] = state[(state[old_si] + state[i]) & 0xFF]
+    return bytes(output)
+
+
+def ceb_synthetic(*, invalid_rsa_key: bool = False) -> bytes:
+    founder_key = bytes.fromhex("00112233445566778899aabbccddeeff")
+    triple_des_key = bytes.fromhex(
+        "0123456789abcdeffedcba987654321089abcdef01234567"
+    )
+    algorithm_id = 0x80000002 if invalid_rsa_key else 2
+    algorithm = struct.pack("<I", algorithm_id)
+    encrypted_stream = bytes.fromhex("2a520589edc5a609")
+    pdf = (
+        b"%PDF-1.4\n"
+        b"1 0 obj\n<< /Length 8 >>\nstream\n"
+        + encrypted_stream
+        + b"\nendstream\nendobj\ntrailer\n<< /Encrypt 1 0 R >>\n%%EOF\n"
+    )
+    stream = founder_keystream(founder_key, len(pdf))
+    encrypted_pdf = bytes(a ^ b for a, b in zip(pdf, stream))
+    symmetric_key = bytes(64) if invalid_rsa_key else triple_des_key
+    sections = [
+        (encrypted_pdf, 0),
+        (founder_key, 3),
+        (symmetric_key, 2),
+        (algorithm, 4),
+    ]
+    index_start = 0x1F
+    index_item_size = 17
+    result = bytearray(index_start + len(sections) * index_item_size)
+    result[:11] = b"Founder CEB"
+    struct.pack_into("<H", result, 0x14, len(sections))
+    for index, (payload, section_type) in enumerate(sections):
+        offset = len(result)
+        item = index_start + index * index_item_size
+        struct.pack_into("<II", result, item, offset, len(payload))
+        result[item + 8] = section_type
+        result.extend(payload)
+    return bytes(result)
+
+
 def write_zip(path: Path, entries: list[tuple[str, bytes]], *, epub: bool = False) -> None:
     with zipfile.ZipFile(path, "w") as archive:
         for name, data in entries:
@@ -122,6 +177,10 @@ def main() -> None:
     (FIXTURES / "tone.wav").write_bytes(wav_buffer.getvalue())
     (FIXTURES / "pixel.bmp").write_bytes(image_bmp)
     (FIXTURES / "one-page.pdf").write_bytes(pdf_one_page())
+    (FIXTURES / "synthetic-ceb.ceb").write_bytes(ceb_synthetic())
+    (FIXTURES / "synthetic-ceb-invalid-rsa.ceb").write_bytes(
+        ceb_synthetic(invalid_rsa_key=True)
+    )
     print(f"Generated fixtures in {FIXTURES}")
 
 
