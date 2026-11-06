@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+  <description><title-info><book-title>Consumer FB2</book-title></title-info></description>
+  <body>
+    <title><p>Consumer FB2</p></title>
+    <section><title><p>Section</p></title><p>Quirewise external consumer FB2 fixture.</p></section>
+  </body>
+</FictionBook>

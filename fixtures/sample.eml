@@ -1,0 +1,18 @@
+From: consumer@example.com
+To: reviewer@example.com
+Subject: Quirewise consumer EML fixture
+Date: Thu, 06 Nov 2026 10:00:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="BOUNDARY"
+
+--BOUNDARY
+Content-Type: text/plain; charset="utf-8"
+
+Quirewise external consumer EML fixture.
+--BOUNDARY
+Content-Type: application/octet-stream; name="note.bin"
+Content-Disposition: attachment; filename="note.bin"
+Content-Transfer-Encoding: base64
+
+aGVsbG8=
+--BOUNDARY--
