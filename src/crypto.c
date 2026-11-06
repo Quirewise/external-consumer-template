@@ -26,5 +26,73 @@ int main(void)
         QW_CRYPTO_OK) return 2;
     if (memcmp(buffer, expected, sizeof(buffer)) != 0) return 3;
     qw_crypto_secure_zero(buffer, sizeof(buffer));
+    {
+        static const uint8_t md5_expected[16] = {
+            0x90u, 0x01u, 0x50u, 0x98u, 0x3cu, 0xd2u, 0x4fu, 0xb0u,
+            0xd6u, 0x96u, 0x3fu, 0x7du, 0x28u, 0xe1u, 0x7fu, 0x72u
+        };
+        static const uint8_t aes128_key[16] = {
+            0x2bu, 0x7eu, 0x15u, 0x16u, 0x28u, 0xaeu, 0xd2u, 0xa6u,
+            0xabu, 0xf7u, 0x15u, 0x88u, 0x09u, 0xcfu, 0x4fu, 0x3cu
+        };
+        static const uint8_t aes128_cipher[16] = {
+            0x3au, 0xd7u, 0x7bu, 0xb4u, 0x0du, 0x7au, 0x36u, 0x60u,
+            0xa8u, 0x9eu, 0xcau, 0xf3u, 0x24u, 0x66u, 0xefu, 0x97u
+        };
+        static const uint8_t aes128_plain[16] = {
+            0x6bu, 0xc1u, 0xbeu, 0xe2u, 0x2eu, 0x40u, 0x9fu, 0x96u,
+            0xe9u, 0x3du, 0x7eu, 0x11u, 0x73u, 0x93u, 0x17u, 0x2au
+        };
+        static const uint8_t aes256_key[32] = {
+            0x60u, 0x3du, 0xebu, 0x10u, 0x15u, 0xcau, 0x71u, 0xbeu,
+            0x2bu, 0x73u, 0xaeu, 0xf0u, 0x85u, 0x7du, 0x77u, 0x81u,
+            0x1fu, 0x35u, 0x2cu, 0x07u, 0x3bu, 0x61u, 0x08u, 0xd7u,
+            0x2du, 0x98u, 0x10u, 0xa3u, 0x09u, 0x14u, 0xdfu, 0xf4u
+        };
+        static const uint8_t aes256_cipher[16] = {
+            0xf3u, 0xeeu, 0xd1u, 0xbdu, 0xb5u, 0xd2u, 0xa0u, 0x3cu,
+            0x06u, 0x4bu, 0x5au, 0x7eu, 0x3du, 0xb1u, 0x81u, 0xf8u
+        };
+        uint8_t digest[16];
+        uint8_t block[16];
+        QwCryptoPdgDeslikeSchedule schedule;
+        uint8_t rsa_cipher[64] = {0};
+        uint8_t rsa_exponent[64] = {0};
+        uint8_t rsa_modulus[64] = {0};
+        uint8_t rsa_output[64] = {0};
+        uint8_t keystream[8];
+        if (qw_crypto_md5_digest("abc", 3u, digest) != QW_CRYPTO_OK) return 4;
+        if (memcmp(digest, md5_expected, sizeof(digest)) != 0) return 5;
+        memcpy(block, aes128_cipher, sizeof(block));
+        if (qw_crypto_aes128_ecb_decrypt(aes128_key, block, sizeof(block)) !=
+            QW_CRYPTO_OK || memcmp(block, aes128_plain, sizeof(block)) != 0) return 6;
+        memcpy(block, aes256_cipher, sizeof(block));
+        if (qw_crypto_aes256_ecb_decrypt(aes256_key, block, sizeof(block)) !=
+            QW_CRYPTO_OK || memcmp(block, aes128_plain, sizeof(block)) != 0) return 7;
+        memset(block, 0, sizeof(block));
+        if (qw_crypto_tea64_ecb_decrypt(aes128_key, block, sizeof(block)) !=
+            QW_CRYPTO_OK) return 8;
+        if (qw_crypto_pdg_tea128_ecb_decrypt(aes128_key, block, sizeof(block)) !=
+            QW_CRYPTO_OK) return 9;
+        if (qw_crypto_pdg_deslike_schedule_init(aes128_key, &schedule) !=
+            QW_CRYPTO_OK) return 10;
+        if (qw_crypto_pdg_deslike_transform16(block, &schedule) != QW_CRYPTO_OK)
+            return 11;
+        qw_crypto_pdg_deslike_schedule_clear(&schedule);
+        memset(block, 0, sizeof(block));
+        if (qw_crypto_blowfish_ecb_decrypt(aes128_key, sizeof(aes128_key), block,
+                                           sizeof(block)) != QW_CRYPTO_OK) return 12;
+        if (qw_crypto_3des_ofb64_crypt(key, iv, block, sizeof(block)) !=
+            QW_CRYPTO_OK) return 13;
+        if (qw_crypto_founder_ceb_keystream(aes128_key, sizeof(aes128_key),
+                                            keystream, sizeof(keystream)) !=
+            QW_CRYPTO_OK) return 14;
+        rsa_cipher[0] = 2u;
+        rsa_exponent[0] = 1u;
+        rsa_modulus[0] = 3u;
+        if (qw_crypto_rsa_mod_exp_512_le(rsa_cipher, rsa_exponent, rsa_modulus,
+                                         rsa_output) != QW_CRYPTO_OK) return 15;
+        if (rsa_output[0] != 2u) return 16;
+    }
     return 0;
 }

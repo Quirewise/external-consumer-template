@@ -109,6 +109,48 @@ int main(void)
         fputs("Compression external LZMA2 consumer failed\n", stderr);
         return 4;
     }
+    {
+        static const uint8_t gzip_hello[] = {
+            0x1fu, 0x8bu, 0x08u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0xffu,
+            0x01u, 0x05u, 0x00u, 0xfau, 0xffu,
+            'h', 'e', 'l', 'l', 'o',
+            0x86u, 0xa6u, 0x10u, 0x36u, 0x05u, 0x00u, 0x00u, 0x00u
+        };
+        uint8_t stored_raw[64];
+        uint8_t stored_zlib[64];
+        uint8_t gzip_output[5];
+        size_t stored_raw_size = 0u;
+        size_t stored_zlib_size = 0u;
+        size_t bounded_size = 0u;
+        if (qw_compression_abi_version() == 0u) return 6;
+        if (qw_compression_adler32("123456789", 9u) != 0x091e01deu) return 7;
+        if (qw_compression_raw_stored_bound(3u) > sizeof(stored_raw)) return 8;
+        if (qw_compression_zlib_stored_bound(3u) > sizeof(stored_zlib)) return 9;
+        if (!qw_compression_deflate_raw_stored((const uint8_t *)"abc", 3u,
+                                               stored_raw, sizeof(stored_raw),
+                                               &stored_raw_size)) return 10;
+        if (!qw_compression_inflate_raw(stored_raw, stored_raw_size,
+                                        gzip_output, 3u)) return 11;
+        if (memcmp(gzip_output, "abc", 3u) != 0) return 12;
+        if (qw_compression_inflate_raw_bounded(stored_raw, stored_raw_size,
+                                               gzip_output, sizeof(gzip_output),
+                                               &bounded_size) !=
+                QW_COMPRESSION_INFLATE_OK || bounded_size != 3u) return 13;
+        if (!qw_compression_deflate_zlib_stored((const uint8_t *)"abc", 3u,
+                                                stored_zlib, sizeof(stored_zlib),
+                                                &stored_zlib_size)) return 14;
+        if (qw_compression_inflate_zlib_bounded(stored_zlib, stored_zlib_size,
+                                                gzip_output, sizeof(gzip_output),
+                                                &bounded_size) !=
+                QW_COMPRESSION_INFLATE_OK || bounded_size != 3u) return 15;
+        if (!qw_compression_inflate_gzip(gzip_hello, sizeof(gzip_hello),
+                                         gzip_output, sizeof(gzip_output))) return 16;
+        if (memcmp(gzip_output, "hello", sizeof(gzip_output)) != 0) return 17;
+        if (!qw_compression_inflate_xz_prefix(xz_stream, sizeof(xz_stream),
+                                              xz_decoded, sizeof(xz_decoded),
+                                              64u * 1024u * 1024u)) return 18;
+        if (memcmp(xz_decoded, xz_expected, sizeof(xz_decoded)) != 0) return 19;
+    }
     puts("PASS: installed Compression API including XZ and 7z LZMA1/LZMA2");
     return 0;
 }

@@ -6,6 +6,53 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+static QwArchiveTarVisitAction tar_visitor(void *context, const char *name,
+                                           const uint8_t *data, size_t size)
+{
+    int *seen = (int *)context;
+    if (!name || !data || size != 5u) return QW_ARCHIVE_TAR_CONTINUE;
+    if (memcmp(name, "hello.txt", 9u) == 0 && memcmp(data, "hello", 5u) == 0) {
+        *seen = 1;
+    }
+    return QW_ARCHIVE_TAR_STOP;
+}
+
+static void write_octal(char *field, size_t width, unsigned int value)
+{
+    size_t index;
+    for (index = 0u; index < width - 1u; ++index) field[index] = '0';
+    field[width - 1u] = '\0';
+    for (index = width - 1u; index > 0u && value; --index) {
+        field[index - 1u] = (char)('0' + (value & 7u));
+        value >>= 3;
+    }
+}
+
+/* Minimal ustar archive: one regular file "hello.txt" containing "hello". */
+static size_t build_ustar(uint8_t *archive, size_t capacity)
+{
+    unsigned int checksum = 0u;
+    size_t index;
+    if (capacity < 1536u) return 0u;
+    memset(archive, 0, 1536u);
+    memcpy(archive, "hello.txt", 9u);
+    write_octal((char *)archive + 100, 8u, 0644u);
+    write_octal((char *)archive + 108, 8u, 0u);
+    write_octal((char *)archive + 116, 8u, 0u);
+    write_octal((char *)archive + 124, 12u, 5u);
+    write_octal((char *)archive + 136, 12u, 0u);
+    memset(archive + 148, ' ', 8u);
+    archive[156] = '0';
+    memcpy(archive + 257, "ustar", 6u);
+    memcpy(archive + 263, "00", 2u);
+    for (index = 0u; index < 512u; ++index) checksum += archive[index];
+    write_octal((char *)archive + 148, 7u, checksum);
+    archive[155] = ' ';
+    memcpy(archive + 512, "hello", 5u);
+    return 1024u; /* header + data block; two zero blocks terminate */
+}
+
 int main(void)
 {
     static const char expected[] = "Quirewise external consumer fixture\n";
@@ -54,5 +101,15 @@ int main(void)
     qw_archive_buffer_free(&extracted);
     qw_zip_archive_close(reader);
     free(data);
-    return result;
+    if (result != 0) return result;
+    if (qw_archive_abi_version() == 0u) return 10;
+    {
+        uint8_t tar[2048];
+        int seen = 0;
+        size_t tar_size = build_ustar(tar, sizeof(tar));
+        if (tar_size == 0u) return 11;
+        status = qw_tar_archive_visit_ustar(tar, tar_size, tar_visitor, &seen);
+        if (status != QW_ARCHIVE_OK || !seen) return 12;
+    }
+    return 0;
 }
