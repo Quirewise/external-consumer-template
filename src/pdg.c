@@ -1,5 +1,8 @@
 #include <pdg.h>
 #include <pdz.h>
+#include <pdz_pdf.h>
+
+#include "fixture_io.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -198,6 +201,73 @@ int main(void)
             PDG_OK) return 39;
         if (count > 1u) return 40;
     }
+    {
+        uint8_t *jpeg = NULL;
+        size_t jpeg_size = 0u;
+        PdzPdfImage images[1];
+        uint8_t *pdf = NULL;
+        size_t pdf_size = 0u;
+        size_t pages = 0u;
+        size_t skipped = 0u;
+        const uint8_t *blobs[1];
+        size_t blob_sizes[1];
+        static const char meta[] = "<meta><pages>3</pages></meta>";
+        if (!qw_consumer_read_fixture("tiny.jpg", &jpeg, &jpeg_size)) return 41;
+        memset(images, 0, sizeof(images));
+        images[0].data = jpeg;
+        images[0].size = jpeg_size;
+        images[0].kind = QW_PAGE_IMAGE_JPEG;
+        images[0].width = 2u;
+        images[0].height = 2u;
+        rc = pdz_pdf_from_images(images, 1u, PDZ_PDF_PAGE_IMAGE, &pdf, &pdf_size,
+                                 &pages);
+        if (rc != PDG_OK || !pdf || pdf_size < 8u || pages != 1u ||
+            memcmp(pdf, "%PDF-", 5u) != 0) return 42;
+        pdz_pdf_free(pdf);
+        pdf = NULL;
+        blobs[0] = jpeg;
+        blob_sizes[0] = jpeg_size;
+        rc = pdz_pdf_from_pdg_files(blobs, blob_sizes, 1u, PDZ_PDF_PAGE_A4, &pdf,
+                                    &pdf_size, &pages, &skipped);
+        if (rc != PDG_OK || !pdf || pages != 1u) return 43;
+        pdz_pdf_free(pdf);
+        pdf = NULL;
+        if (pdz_pdf_merge(blobs, blob_sizes, 1u, &pdf, &pdf_size, &pages) !=
+            PDG_ERR_UNSUPPORTED) return 44;
+        pdz_pdf_free(pdf);
+        if (pdz_pdf_meta_pages(meta, sizeof(meta) - 1u) != 3u) return 45;
+        if (!pdz_pdf_page_rule_name(PDZ_PDF_PAGES_ALL) ||
+            !pdz_pdf_route_name(PDZ_PDF_ROUTE_IMAGES)) return 46;
+        {
+            PdzMember members[2];
+            memset(members, 0, sizeof(members));
+            memcpy(members[0].name, "000001_1", 9u);
+            memcpy(members[1].name, "att001", 7u);
+            (void)pdz_pdf_rule_count(members, 2u, PDZ_PDF_PAGES_ALL);
+        }
+        {
+            PdzPdfReport report;
+            uint8_t *out = NULL;
+            size_t out_size = 0u;
+            memset(&report, 0, sizeof(report));
+            rc = pdz_pdf_from_pdz(junk, sizeof(junk), NULL, PDZ_PDF_PAGES_AUTO,
+                                  PDZ_PDF_PAGE_A4, &out, &out_size, &report);
+            if (rc == PDG_OK) return 47;
+            pdz_pdf_free(out);
+        }
+        if (pdz_pdfpdg_is_member(junk, sizeof(junk)) != 0) return 48;
+        {
+            PdzRuleTable table;
+            PdzRuleMember rule_member;
+            uint32_t page_index = 0u;
+            memset(&table, 0, sizeof(table));
+            (void)pdz_inforule_rule_member(&table, 0u, &rule_member);
+            (void)pdz_inforule_page_member(&table, 1u, &page_index);
+        }
+
+        free(jpeg);
+    }
+
     puts("PASS: installed PDG and PDZ primitives");
     return 0;
 }
