@@ -1,5 +1,6 @@
 #include <quirewise/epub.h>
 #include <quirewise/fb2.h>
+#include <quirewise/mobi.h>
 #include <quirewise/htmlz.h>
 #include <quirewise/pml.h>
 #include <quirewise/text_archive.h>
@@ -25,6 +26,30 @@ int main(void)
         qw_epub_document_free(epub);
         free(data);
         return 3;
+    }
+    {
+        QwEpubSectionView section = {0};
+        if (qw_epub_section_at(epub, 0u, &section) != QW_EPUB_OK) {
+            qw_epub_document_free(epub);
+            free(data);
+            return 18;
+        }
+        if (section.paragraph_count != 0u) {
+            QwEpubParagraphView paragraph = {0};
+            if (qw_epub_paragraph_at(epub, 0u, 0u, &paragraph) != QW_EPUB_OK) {
+                qw_epub_document_free(epub);
+                free(data);
+                return 19;
+            }
+            if (paragraph.run_count != 0u) {
+                QwEpubRunView run = {0};
+                if (qw_epub_run_at(epub, 0u, 0u, 0u, &run) != QW_EPUB_OK) {
+                    qw_epub_document_free(epub);
+                    free(data);
+                    return 20;
+                }
+            }
+        }
     }
     qw_epub_document_free(epub);
     free(data);
@@ -86,5 +111,15 @@ int main(void)
     }
     qw_pml_document_free(&pml);
     free(data);
+    {
+        static const uint8_t junk[16] = {0x00u, 0x01u, 0x02u, 0x03u};
+        QwMobiDocument *mobi = NULL;
+        size_t text_size = 0u;
+        if (qw_mobi_probe(junk, sizeof(junk)) != 0) return 21;
+        if (qw_mobi_parse(junk, sizeof(junk), &mobi) == QW_MOBI_OK) return 22;
+        if (qw_mobi_document_text(NULL, &text_size) != NULL) return 23;
+        qw_mobi_document_kind(NULL);
+        qw_mobi_document_free(NULL);
+    }
     return 0;
 }

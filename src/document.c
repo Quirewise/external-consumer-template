@@ -2,6 +2,10 @@
 #include <quirewise/docx.h>
 #include <quirewise/email.h>
 #include <quirewise/odt.h>
+#include <quirewise/hwpx.h>
+#include <quirewise/odf_presentation.h>
+#include <quirewise/pptx.h>
+#include <quirewise/xps.h>
 
 #include "fixture_io.h"
 
@@ -91,5 +95,37 @@ int main(void)
         return 15;
     }
     free(pdf);
+    {
+        static const uint8_t junk[16] = {0x00u, 0x01u, 0x02u, 0x03u};
+        QwOdpDocument *odp = NULL;
+        QwPptxDocument *pptx = NULL;
+        QwHwpxDocument *hwpx = NULL;
+        QwXpsDocument *xps = NULL;
+        QwXpsPageInfo page_info = {0};
+        uint8_t *page_xml = NULL;
+        size_t page_xml_size = 0u;
+        if (qw_odp_parse(QW_ODP_FORMAT_ODP, junk, sizeof(junk), &odp) ==
+            QW_ODP_OK) return 16;
+        if (qw_odp_document_html(NULL, &html_size) != NULL) return 17;
+        if (qw_odp_document_slide_count(NULL) != 0u) return 18;
+        qw_odp_document_free(NULL);
+        if (qw_pptx_parse(QW_PPTX_FORMAT_PPTX, junk, sizeof(junk), &pptx) ==
+            QW_PPTX_OK) return 19;
+        if (qw_pptx_document_html(NULL, &html_size) != NULL) return 20;
+        qw_pptx_document_free(NULL);
+        if (qw_hwpx_parse(junk, sizeof(junk), &hwpx) == QW_HWPX_OK) return 21;
+        if (qw_hwpx_document_html(NULL, &html_size) != NULL) return 22;
+        if (qw_hwpx_document_section_count(NULL) != 0u) return 23;
+        if (qw_hwpx_document_omitted_object_count(NULL) != 0u) return 24;
+        qw_hwpx_document_free(NULL);
+        if (qw_xps_document_open(junk, sizeof(junk), &xps) == QW_XPS_OK)
+            return 25;
+        if (qw_xps_document_page_count(NULL) != 0u) return 26;
+        if (qw_xps_document_read_page(NULL, 0u, &page_xml, &page_xml_size,
+                                      &page_info) == QW_XPS_OK) return 27;
+        qw_xps_data_free(NULL);
+        qw_xps_document_close(NULL);
+    }
+
     return 0;
 }

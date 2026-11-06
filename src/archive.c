@@ -1,4 +1,6 @@
 #include <quirewise/archive.h>
+#include <quirewise/rar.h>
+#include <quirewise/seven_zip.h>
 
 #include "fixture_io.h"
 
@@ -110,6 +112,17 @@ int main(void)
         if (tar_size == 0u) return 11;
         status = qw_tar_archive_visit_ustar(tar, tar_size, tar_visitor, &seen);
         if (status != QW_ARCHIVE_OK || !seen) return 12;
+    }
+    {
+        static const uint8_t junk[16] = {0x00u, 0x01u, 0x02u, 0x03u};
+        QwSevenZipSink sink;
+        memset(&sink, 0, sizeof(sink));
+        if (qw_rar_archive_visit(junk, sizeof(junk), NULL, NULL, NULL) ==
+            QW_RAR_OK) return 13;
+        if (qw_seven_zip_probe(junk, sizeof(junk), NULL) == QW_SEVEN_ZIP_OK)
+            return 14;
+        if (qw_seven_zip_extract(junk, sizeof(junk), NULL, &sink) ==
+            QW_SEVEN_ZIP_OK) return 15;
     }
     return 0;
 }
