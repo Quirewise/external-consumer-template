@@ -62,6 +62,39 @@ int main(void)
         djvu_status = qw_djvu_get_page_count(junk, sizeof(junk), &djvu_pages);
         if (djvu_status == QW_DJVU_OK) return 23;
 
+        {
+            uint8_t *djvu_data = NULL;
+            size_t djvu_size = 0u;
+            QwDjvuPageInfo djvu_info;
+            QwDjvuImage djvu_image;
+            uint8_t *djvu_text_data = NULL;
+            size_t djvu_text_size = 0u;
+            char *djvu_text = NULL;
+            size_t djvu_text_out = 0u;
+            if (!qw_consumer_read_fixture("tiny.djvu", &djvu_data, &djvu_size))
+                return 40;
+            if (!qw_djvu_is_supported(djvu_data, djvu_size)) return 41;
+            if (qw_djvu_get_page_count(djvu_data, djvu_size, &djvu_pages) !=
+                QW_DJVU_OK || djvu_pages != 1u) return 42;
+            memset(&djvu_info, 0, sizeof(djvu_info));
+            if (qw_djvu_get_page_info(djvu_data, djvu_size, 0u, &djvu_info) !=
+                QW_DJVU_OK || djvu_info.width != 64u ||
+                djvu_info.height != 48u || djvu_info.dpi != 300u) return 43;
+            memset(&djvu_image, 0, sizeof(djvu_image));
+            if (qw_djvu_render_page(djvu_data, djvu_size, 0u, 1u, &djvu_image) !=
+                QW_DJVU_OK || djvu_image.format != QW_DJVU_PIXEL_GRAY8 ||
+                djvu_image.size != 64u * 48u) return 44;
+            qw_djvu_image_free(&djvu_image);
+            free(djvu_data);
+            if (!qw_consumer_read_fixture("tiny-text.djvu", &djvu_text_data,
+                                          &djvu_text_size)) return 45;
+            if (qw_djvu_extract_text(djvu_text_data, djvu_text_size, 0u,
+                                     &djvu_text, &djvu_text_out) != QW_DJVU_OK ||
+                !djvu_text || !strstr(djvu_text, "Hello DjVu")) return 46;
+            qw_djvu_text_free(djvu_text);
+            free(djvu_text_data);
+        }
+
         if (qw_uvz_document_open(junk, sizeof(junk), &uvz) == QW_UVZ_OK) return 24;
         if (qw_uvz_document_page_count(NULL) != 0u) return 25;
         if (qw_uvz_document_page_info(NULL, 0u, &uvz_info) == QW_UVZ_OK) return 26;
