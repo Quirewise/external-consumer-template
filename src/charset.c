@@ -14,6 +14,7 @@ int main(void)
     QwCharsetStatus status = qw_charset_convert(
         "CP1252", "UTF-8", source, sizeof(source), output, sizeof(output),
         &output_size);
+    if (qw_charset_abi_version() == 0u) return 3;
     if (status != QW_CHARSET_OK || output_size != sizeof(expected) ||
         memcmp(output, expected, sizeof(expected)) != 0) {
         fprintf(stderr, "Installed Charset consumer failed with status %d\n",

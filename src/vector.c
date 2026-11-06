@@ -14,6 +14,10 @@ int main(void)
     static const char svg[] =
         "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1\" height=\"1\">"
         "<rect width=\"1\" height=\"1\" fill=\"#336699\"/></svg>";
+    if (qw_svg_abi_version() != QW_SVG_ABI_VERSION) return 6;
+    if (!qw_svg_status_string(QW_SVG_OK)) return 7;
+    if (qw_svgz_abi_version() != QW_SVGZ_ABI_VERSION) return 8;
+    if (!qw_svgz_status_string(QW_SVGZ_OK)) return 9;
     QwSvgImage image = {0};
     QwSvgzDocument svgz = {0};
     QwSvgStatus status = qw_svg_decode(svg, sizeof(svg) - 1u, &image, NULL);
