@@ -1,5 +1,4 @@
 #include <quirewise/page_status.h>
-#include <quirewise/pdf_parser.h>
 #include <quirewise/ceb.h>
 #include <quirewise/djvu.h>
 #include <quirewise/uvz_parser.h>
@@ -33,13 +32,10 @@ int main(void)
     size_t bad_rsa_size = 0u;
     uint8_t *bad_rsa_pdf = NULL;
     size_t bad_rsa_pdf_size = 0u;
-    QwPdfParser *parser = NULL;
     int status;
 
     {
         static const uint8_t junk[16] = {0x00u, 0x01u, 0x02u, 0x03u};
-        QwPdfParserInfo pdf_info = {0};
-        QwPdfParserPageInfo page_info = {0};
         QwDjvuStatus djvu_status;
         QwUvzDocument *uvz = NULL;
         QwUvzPageInfo uvz_info = {0};
@@ -126,31 +122,7 @@ int main(void)
         qw_caj_pdf_data_free(NULL);
         qw_caj_document_close(NULL);
 
-        (void)pdf_info;
-        (void)page_info;
     }
-
-    if (!qw_consumer_read_fixture("one-page.pdf", &data, &size)) return 2;
-    status = qw_pdf_parser_open(data, size, &parser);
-    if (status != QW_PAGE_OK || !parser) { free(data); return 3; }
-    {
-        QwPdfParserInfo info = {0};
-        QwPdfParserPageInfo page = {0};
-        if (qw_pdf_parser_get_info(parser, &info) != QW_PAGE_OK ||
-            info.page_count != 1u) {
-            qw_pdf_parser_close(parser);
-            free(data);
-            return 19;
-        }
-        if (qw_pdf_parser_get_page_info(parser, 0u, &page) != QW_PAGE_OK ||
-            page.media_box.x1 <= page.media_box.x0 || page.media_box.y1 <= page.media_box.y0) {
-            qw_pdf_parser_close(parser);
-            free(data);
-            return 18;
-        }
-    }
-    qw_pdf_parser_close(parser);
-    free(data);
 
     if (!qw_consumer_read_fixture("synthetic-ceb.ceb", &ceb_data, &ceb_size))
         return 4;

@@ -69,6 +69,48 @@ int main(void)
         memcpy(block, aes256_cipher, sizeof(block));
         if (qw_crypto_aes256_ecb_decrypt(aes256_key, block, sizeof(block)) !=
             QW_CRYPTO_OK || memcmp(block, aes128_plain, sizeof(block)) != 0) return 7;
+        {
+            static const uint8_t sha256_expected[32] = {
+                0xbau, 0x78u, 0x16u, 0xbfu, 0x8fu, 0x01u, 0xcfu, 0xeau,
+                0x41u, 0x41u, 0x40u, 0xdeu, 0x5du, 0xaeu, 0x22u, 0x23u,
+                0xb0u, 0x03u, 0x61u, 0xa3u, 0x96u, 0x17u, 0x7au, 0x9cu,
+                0xb4u, 0x10u, 0xffu, 0x61u, 0xf2u, 0x00u, 0x15u, 0xadu,
+            };
+            static const uint8_t sha384_expected[48] = {
+                0xcbu, 0x00u, 0x75u, 0x3fu, 0x45u, 0xa3u, 0x5eu, 0x8bu,
+                0xb5u, 0xa0u, 0x3du, 0x69u, 0x9au, 0xc6u, 0x50u, 0x07u,
+                0x27u, 0x2cu, 0x32u, 0xabu, 0x0eu, 0xdeu, 0xd1u, 0x63u,
+                0x1au, 0x8bu, 0x60u, 0x5au, 0x43u, 0xffu, 0x5bu, 0xedu,
+                0x80u, 0x86u, 0x07u, 0x2bu, 0xa1u, 0xe7u, 0xccu, 0x23u,
+                0x58u, 0xbau, 0xecu, 0xa1u, 0x34u, 0xc8u, 0x25u, 0xa7u,
+            };
+            static const uint8_t sha512_expected[64] = {
+                0xddu, 0xafu, 0x35u, 0xa1u, 0x93u, 0x61u, 0x7au, 0xbau,
+                0xccu, 0x41u, 0x73u, 0x49u, 0xaeu, 0x20u, 0x41u, 0x31u,
+                0x12u, 0xe6u, 0xfau, 0x4eu, 0x89u, 0xa9u, 0x7eu, 0xa2u,
+                0x0au, 0x9eu, 0xeeu, 0xe6u, 0x4bu, 0x55u, 0xd3u, 0x9au,
+                0x21u, 0x92u, 0x99u, 0x2au, 0x27u, 0x4fu, 0xc1u, 0xa8u,
+                0x36u, 0xbau, 0x3cu, 0x23u, 0xa3u, 0xfeu, 0xebu, 0xbdu,
+                0x45u, 0x4du, 0x44u, 0x23u, 0x64u, 0x3cu, 0xe8u, 0x0eu,
+                0x2au, 0x9au, 0xc9u, 0x4fu, 0xa5u, 0x4cu, 0xa4u, 0x9fu,
+            };
+            uint8_t digest32[32];
+            uint8_t digest48[48];
+            uint8_t digest64[64];
+            if (qw_crypto_sha256((const uint8_t *)"abc", 3u, digest32) !=
+                    QW_CRYPTO_OK ||
+                memcmp(digest32, sha256_expected, sizeof(digest32)) != 0) return 17;
+            if (qw_crypto_sha384((const uint8_t *)"abc", 3u, digest48) !=
+                    QW_CRYPTO_OK ||
+                memcmp(digest48, sha384_expected, sizeof(digest48)) != 0) return 18;
+            if (qw_crypto_sha512((const uint8_t *)"abc", 3u, digest64) !=
+                    QW_CRYPTO_OK ||
+                memcmp(digest64, sha512_expected, sizeof(digest64)) != 0) return 19;
+            memcpy(block, aes128_plain, sizeof(block));
+            if (qw_crypto_aes128_ecb_encrypt(aes128_key, block, sizeof(block)) !=
+                    QW_CRYPTO_OK ||
+                memcmp(block, aes128_cipher, sizeof(block)) != 0) return 20;
+        }
         memset(block, 0, sizeof(block));
         if (qw_crypto_tea64_ecb_decrypt(aes128_key, block, sizeof(block)) !=
             QW_CRYPTO_OK) return 8;

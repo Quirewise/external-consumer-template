@@ -4,6 +4,7 @@
 #include <quirewise/odt.h>
 #include <quirewise/hwpx.h>
 #include <quirewise/odf_presentation.h>
+#include <quirewise/pdf.h>
 #include <quirewise/pptx.h>
 #include <quirewise/xps.h>
 
@@ -94,6 +95,108 @@ int main(void)
         free(pdf);
         return 15;
     }
+    {
+        QwPdfDocument *document = NULL;
+        size_t pdf_pages = 0u;
+        QwPageImage page;
+        uint8_t *pdf_text = NULL;
+        size_t pdf_text_size = 0u;
+        uint8_t *merged = NULL;
+        size_t merged_size = 0u;
+        size_t merged_pages = 0u;
+        uint8_t *png = NULL;
+        size_t png_size = 0u;
+        const uint8_t *inputs[1];
+        size_t input_sizes[1];
+        int status;
+
+        memset(&page, 0, sizeof(page));
+        status = qw_pdf_open(pdf, pdf_size, &document, &pdf_pages, NULL);
+        if (status != QW_STATUS_OK || !document || pdf_pages != 1u) {
+            qw_pdf_close(document);
+            free(pdf);
+            return 28;
+        }
+        {
+            double media[4];
+            double crop[4];
+            int rotation = -1;
+            if (qw_pdf_page_geometry(document, 0u, media, crop, &rotation) !=
+                    QW_STATUS_OK ||
+                media[2] <= media[0] || media[3] <= media[1] ||
+                rotation != 0) {
+                qw_pdf_close(document);
+                free(pdf);
+                return 61;
+            }
+        }
+        {
+            QwPdfDocument *structure = NULL;
+            size_t structure_pages = 0u;
+            if (qw_pdf_open_structure(pdf, pdf_size, &structure,
+                                      &structure_pages, NULL) !=
+                    QW_STATUS_OK ||
+                !structure || structure_pages != 1u) {
+                qw_pdf_close(structure);
+                qw_pdf_close(document);
+                free(pdf);
+                return 62;
+            }
+            qw_pdf_close(structure);
+        }
+        status = qw_pdf_render_page(document, 0u, 72u, &page, NULL);
+        if (status != QW_STATUS_OK || !page.data || page.width == 0u) {
+            qw_pdf_page_free(&page);
+            qw_pdf_close(document);
+            free(pdf);
+            return 29;
+        }
+        qw_pdf_page_free(&page);
+
+        status = qw_pdf_extract_text(document, &pdf_text, &pdf_text_size, NULL);
+        if (status != QW_STATUS_OK || !pdf_text || pdf_text_size == 0u) {
+            qw_pdf_free(pdf_text);
+            qw_pdf_close(document);
+            free(pdf);
+            return 30;
+        }
+        qw_pdf_free(pdf_text);
+
+        inputs[0] = pdf;
+        input_sizes[0] = pdf_size;
+        status = qw_pdf_merge(inputs, input_sizes, 1u, &merged, &merged_size,
+                              &merged_pages, NULL);
+        if (status != QW_STATUS_OK || !merged || merged_pages != 1u ||
+            merged_size < 8u || memcmp(merged, "%PDF-", 5u) != 0) {
+            qw_pdf_free(merged);
+            qw_pdf_close(document);
+            free(pdf);
+            return 31;
+        }
+        qw_pdf_free(merged);
+
+        status = qw_convert_to_format_memory(pdf, pdf_size, QW_FORMAT_PNG, NULL,
+                                             &png, &png_size, NULL);
+        if (status != QW_STATUS_OK || !png || png_size < 8u ||
+            png[0] != 0x89u || memcmp(png + 1, "PNG", 3u) != 0) {
+            qw_buffer_free(png);
+            qw_pdf_close(document);
+            free(pdf);
+            return 32;
+        }
+        qw_buffer_free(png);
+
+        status = qw_convert_to_format_memory(pdf, pdf_size, QW_FORMAT_TXT, NULL,
+                                             &pdf_text, &pdf_text_size, NULL);
+        if (status != QW_STATUS_OK || !pdf_text) {
+            qw_buffer_free(pdf_text);
+            qw_pdf_close(document);
+            free(pdf);
+            return 33;
+        }
+        qw_buffer_free(pdf_text);
+        qw_pdf_close(document);
+    }
     free(pdf);
     {
         static const uint8_t junk[16] = {0x00u, 0x01u, 0x02u, 0x03u};
@@ -125,6 +228,37 @@ int main(void)
                                       &page_info) == QW_XPS_OK) return 27;
         qw_xps_data_free(NULL);
         qw_xps_document_close(NULL);
+    }
+    {
+        /* Structure-only view of a fixture PDF: this is the replacement for
+         * the page package's former qw_pdf_parser_* API. */
+        uint8_t *fixture = NULL;
+        size_t fixture_size = 0u;
+        QwPdfDocument *structure = NULL;
+        size_t structure_pages = 0u;
+        double media[4];
+        double crop[4];
+        int rotation = -1;
+        if (!qw_consumer_read_fixture("one-page.pdf", &fixture,
+                                      &fixture_size)) {
+            return 34;
+        }
+        if (qw_pdf_open_structure(fixture, fixture_size, &structure,
+                                  &structure_pages, NULL) != QW_STATUS_OK ||
+            !structure || structure_pages != 1u) {
+            qw_pdf_close(structure);
+            free(fixture);
+            return 35;
+        }
+        if (qw_pdf_page_geometry(structure, 0u, media, crop, &rotation) !=
+                QW_STATUS_OK ||
+            media[2] <= media[0] || media[3] <= media[1]) {
+            qw_pdf_close(structure);
+            free(fixture);
+            return 36;
+        }
+        qw_pdf_close(structure);
+        free(fixture);
     }
 
     return 0;

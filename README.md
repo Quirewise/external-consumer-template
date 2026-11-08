@@ -43,7 +43,7 @@ the current mapping covers every exported public function.
 | Document | `qw_email_parse` | inline EML |
 | Ebook | `qw_epub_parse` | `sample.epub` |
 | Image | `qw_image_decode` | `pixel.bmp` |
-| Page | `qw_pdf_parser_open` | `one-page.pdf` |
+| Page | `qw_ceb_decrypt_to_pdf` | `synthetic-ceb.ceb` |
 | PDG | `pdg_decode_memory` | `pixel.bmp` |
 | Runtime | `qw_runtime_buffer_alloc` | 32-byte buffer |
 | Spreadsheet | `qw_spreadsheet_parse` | inline CSV |
