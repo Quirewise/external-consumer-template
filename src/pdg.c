@@ -14,6 +14,31 @@ static int check_text(const char *value)
     return value != NULL && value[0] != '\0';
 }
 
+/* Caller-owned sink for the streaming PDF writer. */
+typedef struct ConsumerPdfSink {
+    uint8_t *data;
+    size_t size;
+    size_t capacity;
+} ConsumerPdfSink;
+
+static int consumer_pdf_sink(void *context, const void *data, size_t size)
+{
+    ConsumerPdfSink *sink = (ConsumerPdfSink *)context;
+    uint8_t *grown;
+    if (!sink || !data) return -1;
+    if (sink->size + size > sink->capacity) {
+        size_t capacity = sink->capacity ? sink->capacity : 4096u;
+        while (capacity < sink->size + size) capacity *= 2u;
+        grown = (uint8_t *)realloc(sink->data, capacity);
+        if (!grown) return -1;
+        sink->data = grown;
+        sink->capacity = capacity;
+    }
+    memcpy(sink->data + sink->size, data, size);
+    sink->size += size;
+    return 0;
+}
+
 int main(void)
 {
     static const uint8_t junk[16] = {0x00u, 0x01u, 0x02u, 0x03u};
@@ -212,6 +237,8 @@ int main(void)
         const uint8_t *blobs[1];
         size_t blob_sizes[1];
         static const char meta[] = "<meta><pages>3</pages></meta>";
+        ConsumerPdfSink sink;
+        memset(&sink, 0, sizeof(sink));
         if (!qw_consumer_read_fixture("tiny.jpg", &jpeg, &jpeg_size)) return 41;
         memset(images, 0, sizeof(images));
         images[0].data = jpeg;
@@ -263,6 +290,48 @@ int main(void)
             memset(&table, 0, sizeof(table));
             (void)pdz_inforule_rule_member(&table, 0u, &rule_member);
             (void)pdz_inforule_page_member(&table, 1u, &page_index);
+        }
+        /* Streaming writer: a caller sink receives the document one object at
+         * a time. An empty writer must refuse to publish a page tree. */
+        {
+            PdzPdfWriter *writer = NULL;
+            size_t written_pages = 0u;
+            rc = pdz_pdf_writer_create(PDZ_PDF_PAGE_A4, consumer_pdf_sink,
+                                       &sink, &writer);
+            if (rc != PDG_OK || !writer) return 49;
+            if (pdz_pdf_writer_finish(writer, &written_pages) != PDG_ERR_EMPTY) {
+                pdz_pdf_writer_destroy(writer);
+                return 50;
+            }
+            pdz_pdf_writer_destroy(writer);
+            writer = NULL;
+            sink.size = 0u;
+            rc = pdz_pdf_writer_create(PDZ_PDF_PAGE_IMAGE, consumer_pdf_sink,
+                                       &sink, &writer);
+            if (rc != PDG_OK || !writer) return 51;
+            if (pdz_pdf_writer_add_page(writer, &images[0]) != PDG_OK) {
+                pdz_pdf_writer_destroy(writer);
+                return 52;
+            }
+            if (pdz_pdf_writer_finish(writer, &written_pages) != PDG_OK ||
+                written_pages != 1u || sink.size < 8u ||
+                memcmp(sink.data, "%PDF-", 5u) != 0) {
+                pdz_pdf_writer_destroy(writer);
+                return 53;
+            }
+            pdz_pdf_writer_destroy(writer);
+            free(sink.data);
+        }
+        /* Bitonal re-encode refuses pages that already carry a native
+         * encoding; a caller must embed those verbatim. */
+        {
+            PdgBuffer ccitt;
+            memset(&ccitt, 0, sizeof(ccitt));
+            if (pdg_render_to_ccitt(jpeg, jpeg_size, &ccitt) == PDG_OK) {
+                pdg_buffer_free(&ccitt);
+                return 54;
+            }
+            pdg_buffer_free(&ccitt);
         }
 
         free(jpeg);
