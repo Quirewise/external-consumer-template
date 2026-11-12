@@ -196,6 +196,26 @@ int main(void)
         if (pdz_derive_key("*s{P2a_1mP^?", key16) != PDG_OK) return 34;
     }
     {
+        /* FIPS-197 AES-256 ECB single-block vector. */
+        static const uint8_t aes_key[32] = {
+            0x00u, 0x01u, 0x02u, 0x03u, 0x04u, 0x05u, 0x06u, 0x07u,
+            0x08u, 0x09u, 0x0au, 0x0bu, 0x0cu, 0x0du, 0x0eu, 0x0fu,
+            0x10u, 0x11u, 0x12u, 0x13u, 0x14u, 0x15u, 0x16u, 0x17u,
+            0x18u, 0x19u, 0x1au, 0x1bu, 0x1cu, 0x1du, 0x1eu, 0x1fu
+        };
+        static const uint8_t aes_cipher[16] = {
+            0x8eu, 0xa2u, 0xb7u, 0xcau, 0x51u, 0x67u, 0x45u, 0xbfu,
+            0xeau, 0xfcu, 0x49u, 0x90u, 0x4bu, 0x49u, 0x60u, 0x89u
+        };
+        static const uint8_t aes_plain[16] = {
+            0x00u, 0x11u, 0x22u, 0x33u, 0x44u, 0x55u, 0x66u, 0x77u,
+            0x88u, 0x99u, 0xaau, 0xbbu, 0xccu, 0xddu, 0xeeu, 0xffu
+        };
+        uint8_t block[16];
+        pdz_aes256_decrypt_block(aes_cipher, aes_key, block);
+        if (memcmp(block, aes_plain, sizeof(block)) != 0) return 55;
+    }
+    {
         uint8_t *out = NULL;
         size_t out_size = 0u;
         if (pdz_inflate_raw(junk, sizeof(junk), &out, &out_size) == PDG_OK)
@@ -271,6 +291,24 @@ int main(void)
             memcpy(members[0].name, "000001_1", 9u);
             memcpy(members[1].name, "att001", 7u);
             (void)pdz_pdf_rule_count(members, 2u, PDZ_PDF_PAGES_ALL);
+        }
+        {
+            PdzMember members[2];
+            memset(members, 0, sizeof(members));
+            memcpy(members[0].name, "000001", 6u);
+            memcpy(members[1].name, "att001", 6u);
+            if (pdz_pdf_member_selected(&members[0], PDZ_PDF_PAGES_BODY) != 1)
+                return 56;
+            if (pdz_pdf_member_selected(&members[1], PDZ_PDF_PAGES_BODY) != 0)
+                return 57;
+            (void)pdz_pdf_resolve_rule(junk, sizeof(junk), members, 2u, NULL,
+                                       PDZ_PDF_PAGES_AUTO);
+        }
+        {
+            PdzBuffer payload = {0};
+            if (pdz_pdfpdg_decode_member(junk, sizeof(junk), &payload) ==
+                PDG_OK) return 58;
+            pdz_buffer_free(&payload);
         }
         {
             PdzPdfReport report;

@@ -261,5 +261,44 @@ int main(void)
         free(fixture);
     }
 
+    {
+        /* File-level API and raster writer: exercised for coverage, with
+         * error paths for the file entry points (no writable fixture tree). */
+        static const uint8_t pixels[4] = {0x00u, 0x7fu, 0xffu, 0x40u};
+        QwRasterPage raster;
+        QwConvertReport report;
+        uint8_t *pdf = NULL;
+        size_t pdf_size = 0u;
+        memset(&raster, 0, sizeof(raster));
+        raster.pixels = pixels;
+        raster.stride = 2u;
+        raster.width = 2u;
+        raster.height = 2u;
+        raster.channels = 1;
+        memset(&report, 0, sizeof(report));
+        if (qw_raster_pages_to_pdf(&raster, 1u, &pdf, &pdf_size, &report) !=
+            QW_STATUS_OK || !pdf || pdf_size < 8u ||
+            memcmp(pdf, "%PDF-", 5u) != 0) return 59;
+        free(pdf);
+        pdf = NULL;
+        pdf_size = 0u;
+        if (qw_raster_pages_to_pdf_mode(&raster, 1u, QW_RASTER_PAGE_MODE_A4,
+                                        &pdf, &pdf_size, &report) !=
+            QW_STATUS_OK || !pdf || pdf_size < 8u) return 60;
+        free(pdf);
+        if (!qw_format_name(qw_detect_format(pixels, sizeof(pixels))) ||
+            !qw_format_name(QW_FORMAT_UNKNOWN)) return 61;
+        memset(&report, 0, sizeof(report));
+        if (qw_convert_file("does-not-exist.odt", "consumer-out.pdf", NULL,
+                            &report) == QW_STATUS_OK) return 62;
+        memset(&report, 0, sizeof(report));
+        if (qw_convert_file_to_format("does-not-exist.odt", "consumer-out.pdf",
+                                      QW_FORMAT_PDF, NULL, &report) ==
+            QW_STATUS_OK) return 63;
+        memset(&report, 0, sizeof(report));
+        if (qw_check_file("does-not-exist.odt", NULL, &report) ==
+            QW_STATUS_OK) return 64;
+    }
+
     return 0;
 }
