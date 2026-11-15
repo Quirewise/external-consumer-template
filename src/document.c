@@ -300,5 +300,18 @@ int main(void)
             QW_STATUS_OK) return 64;
     }
 
+    {
+        static const char html[] =
+            "<html><body><h1>External consumer HWPX</h1></body></html>";
+        uint8_t *package = NULL;
+        size_t package_size = 0u;
+
+        if (qw_hwpx_create(html, sizeof(html) - 1u, &package, &package_size) !=
+                QW_HWPX_OK ||
+            !package || !package_size)
+            return 65;
+        qw_hwpx_buffer_free(package);
+    }
+
     return 0;
 }

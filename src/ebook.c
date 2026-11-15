@@ -155,5 +155,26 @@ int main(void)
         qw_mdx_document_free(NULL);
         qw_mdd_document_free(NULL);
     }
+    {
+        static const char text[] = "External consumer TXTZ\n";
+        static const char html[] =
+            "<html><body><p>External consumer HTMLZ</p></body></html>";
+        uint8_t *archive = NULL;
+        size_t archive_size = 0u;
+
+        if (qw_text_archive_create(QW_TEXT_ARCHIVE_TXTZ, text,
+                                   sizeof(text) - 1u, &archive,
+                                   &archive_size) != QW_TEXT_ARCHIVE_OK ||
+            !archive || !archive_size)
+            return 39;
+        qw_text_archive_buffer_free(archive);
+        archive = NULL;
+        archive_size = 0u;
+        if (qw_htmlz_create(html, sizeof(html) - 1u, &archive, &archive_size) !=
+                QW_HTMLZ_OK ||
+            !archive || !archive_size)
+            return 40;
+        qw_htmlz_buffer_free(archive);
+    }
     return 0;
 }
