@@ -258,6 +258,20 @@ int main(void)
             return 36;
         }
         qw_pdf_close(structure);
+        {
+            QwPdfDocument *password_open = NULL;
+            size_t password_pages = 0u;
+
+            if (qw_pdf_open_with_password(fixture, fixture_size, "",
+                                          &password_open, &password_pages,
+                                          NULL) != QW_STATUS_OK ||
+                !password_open || password_pages != 1u) {
+                qw_pdf_close(password_open);
+                free(fixture);
+                return 67;
+            }
+            qw_pdf_close(password_open);
+        }
         free(fixture);
     }
 
