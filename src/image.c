@@ -57,10 +57,15 @@ int main(void)
         encoded = NULL;
         encoded_size = 0u;
         if (qw_image_encode(&image, QW_IMAGE_ENCODE_WEBP, &encoded,
-                            &encoded_size) != QW_IMAGE_ERR_UNSUPPORTED) {
+                            &encoded_size) != QW_IMAGE_OK ||
+            !encoded || encoded_size < 12u ||
+            memcmp(encoded, "RIFF", 4u) != 0 ||
+            memcmp(encoded + 8u, "WEBP", 4u) != 0) {
+            qw_image_buffer_free(encoded);
             qw_image_free(&image);
             return 11;
         }
+        qw_image_buffer_free(encoded);
     }
     qw_image_free(&image);
     if (!qw_image_status_string(0)) return 7;
