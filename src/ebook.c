@@ -146,6 +146,8 @@ int main(void)
             QW_MDX_ERROR_INVALID_ARGUMENT) return 33;
         if (qw_mdx_document_text(NULL, &bytes, &size) !=
             QW_MDX_ERROR_INVALID_ARGUMENT) return 34;
+        if (qw_mdx_document_html_with_resources(NULL, NULL, &bytes, &size) !=
+            QW_MDX_ERROR_INVALID_ARGUMENT) return 41;
         if (qw_mdd_document_title(NULL) != NULL) return 35;
         if (qw_mdd_document_resource_count(NULL) != 0u) return 36;
         if (qw_mdd_document_resource_at(NULL, 0u, NULL, NULL, NULL, NULL) !=
