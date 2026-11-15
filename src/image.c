@@ -46,9 +46,20 @@ int main(void)
         encoded = NULL;
         encoded_size = 0u;
         if (qw_image_encode(&image, QW_IMAGE_ENCODE_JPEG, &encoded,
-                            &encoded_size) != QW_IMAGE_ERR_UNSUPPORTED) {
+                            &encoded_size) != QW_IMAGE_OK ||
+            !encoded || encoded_size < 2u || encoded[0] != 0xffu ||
+            encoded[1] != 0xd8u) {
+            qw_image_buffer_free(encoded);
             qw_image_free(&image);
             return 10;
+        }
+        qw_image_buffer_free(encoded);
+        encoded = NULL;
+        encoded_size = 0u;
+        if (qw_image_encode(&image, QW_IMAGE_ENCODE_WEBP, &encoded,
+                            &encoded_size) != QW_IMAGE_ERR_UNSUPPORTED) {
+            qw_image_free(&image);
+            return 11;
         }
     }
     qw_image_free(&image);
