@@ -196,5 +196,19 @@ int main(void)
         if (!document.html || !document.html_size) return 38;
         qw_rtf_document_free(&document);
     }
+    {
+        static const char html[] =
+            "<h1>External consumer</h1><p>Body with <strong>bold</strong> and "
+            "<a href=\"https://example.com\">a link</a>.</p>";
+        QwMarkdownText document;
+
+        memset(&document, 0, sizeof(document));
+        if (qw_markdown_from_html(html, sizeof(html) - 1u, &document) !=
+            QW_MARKDOWN_OK || !document.markdown || !document.markdown_size)
+            return 39;
+        if (!strstr(document.markdown, "# External consumer")) return 40;
+        qw_markdown_text_free(&document);
+        if (document.markdown) return 41;
+    }
     return 0;
 }

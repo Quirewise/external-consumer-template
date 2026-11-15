@@ -63,6 +63,15 @@ int main(void)
         uint8_t keystream[8];
         if (qw_crypto_md5_digest("abc", 3u, digest) != QW_CRYPTO_OK) return 4;
         if (memcmp(digest, md5_expected, sizeof(digest)) != 0) return 5;
+        {
+            static const uint8_t ripemd_expected[16] = {
+                0xc1u, 0x4au, 0x12u, 0x19u, 0x9cu, 0x66u, 0xe4u, 0xbau,
+                0x84u, 0x63u, 0x6bu, 0x0fu, 0x69u, 0x14u, 0x4cu, 0x77u
+            };
+            if (qw_crypto_ripemd128((const uint8_t *)"abc", 3u, digest) !=
+                    QW_CRYPTO_OK ||
+                memcmp(digest, ripemd_expected, sizeof(digest)) != 0) return 21;
+        }
         memcpy(block, aes128_cipher, sizeof(block));
         if (qw_crypto_aes128_ecb_decrypt(aes128_key, block, sizeof(block)) !=
             QW_CRYPTO_OK || memcmp(block, aes128_plain, sizeof(block)) != 0) return 6;

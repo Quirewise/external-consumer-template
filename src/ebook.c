@@ -1,5 +1,7 @@
 #include <quirewise/epub.h>
 #include <quirewise/fb2.h>
+#include <quirewise/mdd.h>
+#include <quirewise/mdx.h>
 #include <quirewise/mobi.h>
 #include <quirewise/htmlz.h>
 #include <quirewise/pml.h>
@@ -120,6 +122,38 @@ int main(void)
         if (qw_mobi_document_text(NULL, &text_size) != NULL) return 23;
         qw_mobi_document_kind(NULL);
         qw_mobi_document_free(NULL);
+    }
+    {
+        static const uint8_t junk[16] = {0x00u, 0x00u, 0x00u, 0x10u};
+        QwMdxDocument *mdx = NULL;
+        QwMddDocument *mdd = NULL;
+        const uint8_t *bytes = NULL;
+        size_t size = 0u;
+        char error[64];
+        if (qw_mdx_probe(junk, sizeof(junk)) != 0) return 24;
+        if (qw_mdd_probe(junk, sizeof(junk)) != 0) return 25;
+        if (qw_mdx_parse(junk, sizeof(junk), &mdx, error, sizeof(error)) ==
+            QW_MDX_OK) return 26;
+        if (qw_mdd_parse(junk, sizeof(junk), &mdd, error, sizeof(error)) ==
+            QW_MDD_OK) return 27;
+        if (qw_mdx_document_title(NULL) != NULL) return 28;
+        if (qw_mdx_document_description(NULL) != NULL) return 29;
+        if (qw_mdx_document_encoding(NULL) != NULL) return 30;
+        if (qw_mdx_document_entry_count(NULL) != 0u) return 31;
+        if (qw_mdx_document_entry_at(NULL, 0u, NULL, NULL, NULL, NULL) !=
+            QW_MDX_ERROR_INVALID_ARGUMENT) return 32;
+        if (qw_mdx_document_html(NULL, &bytes, &size) !=
+            QW_MDX_ERROR_INVALID_ARGUMENT) return 33;
+        if (qw_mdx_document_text(NULL, &bytes, &size) !=
+            QW_MDX_ERROR_INVALID_ARGUMENT) return 34;
+        if (qw_mdd_document_title(NULL) != NULL) return 35;
+        if (qw_mdd_document_resource_count(NULL) != 0u) return 36;
+        if (qw_mdd_document_resource_at(NULL, 0u, NULL, NULL, NULL, NULL) !=
+            QW_MDD_ERROR_INVALID_ARGUMENT) return 37;
+        if (qw_mdd_document_resource_find(NULL, "x", 1u, NULL, NULL) !=
+            QW_MDD_ERROR_INVALID_ARGUMENT) return 38;
+        qw_mdx_document_free(NULL);
+        qw_mdd_document_free(NULL);
     }
     return 0;
 }

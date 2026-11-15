@@ -42,6 +42,40 @@ int main(void)
     }
     fclose(file);
     remove("pipeline-consumer-out.pdf");
+
+    /* Target-aware conversion: a JSON fixture becomes YAML through the data
+     * writer, not through a PDF route. */
+    file = fopen("pipeline-consumer.json", "wb");
+    if (!file) return 5;
+    if (fputs("{\"name\":\"quirewise consumer\"}", file) == EOF) {
+        fclose(file);
+        return 5;
+    }
+    fclose(file);
+    remove("pipeline-consumer.yaml");
+    memset(&report, 0, sizeof(report));
+    if (qw_pipeline_convert_file_to_format("pipeline-consumer.json",
+                                           "pipeline-consumer.yaml",
+                                           QW_FORMAT_YAML, &options,
+                                           &report) != QW_STATUS_OK) {
+        fprintf(stderr, "pipeline target convert failed: %s\n", report.note);
+        remove("pipeline-consumer.json");
+        return 6;
+    }
+    file = fopen("pipeline-consumer.yaml", "rb");
+    if (!file) {
+        remove("pipeline-consumer.json");
+        return 7;
+    }
+    {
+        char yaml[256];
+        size_t length = fread(yaml, 1u, sizeof(yaml) - 1u, file);
+        fclose(file);
+        yaml[length] = '\0';
+        remove("pipeline-consumer.yaml");
+        remove("pipeline-consumer.json");
+        if (!strstr(yaml, "quirewise consumer")) return 8;
+    }
     puts("pipeline consumer OK");
     return 0;
 }

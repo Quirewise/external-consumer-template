@@ -166,6 +166,23 @@ int main(void)
         QW_DATA_OK || !document) return 5;
     if (qw_data_document_format(document) != QW_DATA_FORMAT_JSON) return 6;
     {
+        QwConvertReport report;
+        uint8_t *written = NULL;
+        size_t written_size = 0u;
+
+        memset(&report, 0, sizeof(report));
+        if (qw_data_write_document(document, QW_FORMAT_YAML, NULL, &written,
+                                   &written_size, &report) != QW_DATA_OK ||
+            !written || !written_size)
+            return 40;
+        if (!strstr((const char *)written, "enabled")) return 41;
+        qw_data_buffer_free(written);
+        if (qw_data_write_document(document, QW_FORMAT_PDF, NULL, &written,
+                                   &written_size, &report) !=
+            QW_DATA_ERR_UNSUPPORTED)
+            return 42;
+    }
+    {
         const QwDataValue *root = qw_data_document_root(document);
         const char *key = NULL;
         size_t key_size = 0u;
