@@ -120,6 +120,9 @@ int main(void)
         {
             char title[64];
             char author[64];
+            char bookmark[128];
+            size_t bookmark_page = 0u;
+            int bookmark_depth = 0;
             if (qw_pdf_document_title(document, title, sizeof(title)) !=
                     QW_STATUS_OK ||
                 qw_pdf_document_author(document, author, sizeof(author)) !=
@@ -128,6 +131,17 @@ int main(void)
                 free(pdf);
                 return 63;
             }
+            if (qw_pdf_bookmark_count(document) > 0u &&
+                qw_pdf_bookmark_at(document, 0u, bookmark, sizeof(bookmark),
+                                   &bookmark_page, &bookmark_depth) !=
+                    QW_STATUS_OK) {
+                qw_pdf_close(document);
+                free(pdf);
+                return 64;
+            }
+            if (qw_pdf_bookmark_count(document) == 0u)
+                (void)qw_pdf_bookmark_at(document, 0u, bookmark,
+                                         sizeof(bookmark), NULL, NULL);
         }
         {
             double media[4];
