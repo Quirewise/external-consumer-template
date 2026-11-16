@@ -118,6 +118,18 @@ int main(void)
             return 28;
         }
         {
+            char title[64];
+            char author[64];
+            if (qw_pdf_document_title(document, title, sizeof(title)) !=
+                    QW_STATUS_OK ||
+                qw_pdf_document_author(document, author, sizeof(author)) !=
+                    QW_STATUS_OK) {
+                qw_pdf_close(document);
+                free(pdf);
+                return 63;
+            }
+        }
+        {
             double media[4];
             double crop[4];
             int rotation = -1;
