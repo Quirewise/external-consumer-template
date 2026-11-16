@@ -68,6 +68,14 @@ int main(void)
             return 10;
         }
     }
+    {
+        const QwSpreadsheetSheet *sheet =
+            qw_spreadsheet_sheet_at(document, 0u);
+        if (qw_spreadsheet_sheet_merge_count(NULL) != 0u) return 11;
+        if (qw_spreadsheet_sheet_merge_count(sheet) != 0u) return 12;
+        if (qw_spreadsheet_sheet_merge_at(sheet, 0u, NULL, NULL, NULL, NULL) !=
+            QW_SPREADSHEET_ERR_INVALID_ARGUMENT) return 13;
+    }
     qw_spreadsheet_document_free(document);
     return status == QW_SPREADSHEET_OK ? 0 : 2;
 }
