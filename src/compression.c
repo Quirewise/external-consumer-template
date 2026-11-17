@@ -150,6 +150,24 @@ int main(void)
                                               xz_decoded, sizeof(xz_decoded),
                                               64u * 1024u * 1024u)) return 18;
         if (memcmp(xz_decoded, xz_expected, sizeof(xz_decoded)) != 0) return 19;
+        {
+            static const char payload[] = "abcabcabcabcabca";
+            uint8_t raw[128];
+            uint8_t zlib[128];
+            uint8_t decoded[64];
+            size_t raw_size = 0u;
+            size_t zlib_size = 0u;
+            if (qw_compression_raw_bound(16u) > sizeof(raw)) return 20;
+            if (qw_compression_zlib_bound(16u) > sizeof(zlib)) return 21;
+            if (!qw_compression_deflate_raw((const uint8_t *)payload, 16u, raw,
+                                            sizeof(raw), &raw_size)) return 22;
+            if (!qw_compression_inflate_raw(raw, raw_size, decoded, 16u)) return 23;
+            if (memcmp(decoded, payload, 16u) != 0) return 24;
+            if (!qw_compression_deflate_zlib((const uint8_t *)payload, 16u, zlib,
+                                             sizeof(zlib), &zlib_size)) return 25;
+            if (!qw_compression_inflate_zlib(zlib, zlib_size, decoded, 16u)) return 26;
+            if (memcmp(decoded, payload, 16u) != 0) return 27;
+        }
     }
     puts("PASS: installed Compression API including XZ and 7z LZMA1/LZMA2");
     return 0;
